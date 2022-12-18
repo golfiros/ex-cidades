@@ -1,28 +1,50 @@
 ﻿using System;
+using System.IO;
+using System.Linq;
 
 class Program
 {
     public static void Main()
     {
-        uint numeroCidades = ValidarEntrada("Digite o número de cidades: ");
+        string caminhoDesktop = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+
+        string caminhoDistancias = Path.Combine(caminhoDesktop, "matriz.txt");
+        if (!File.Exists(caminhoDistancias))
+        {
+            Console.WriteLine("Arquivo de distâncias não encontrado.");
+            return;
+        }
+        // muita coisa pode dar errado aqui então não
+        // vou validar as entradas da matriz
+        string[] linhasDistancia = File.ReadAllLines(caminhoDistancias);
+
+        uint numeroCidades = (uint)linhasDistancia.Length;
         uint[,] distancias = new uint[numeroCidades, numeroCidades];
 
         for (int cidade1 = 0; cidade1 < numeroCidades; cidade1++)
         {
-            for (int cidade2 = cidade1 + 1; cidade2 < numeroCidades; cidade2++)
+            string[] distanciasString = linhasDistancia[cidade1].Split(',');
+            for (int cidade2 = 0; cidade2 < numeroCidades; cidade2++)
             {
-                distancias[cidade1, cidade2] =
-                    ValidarEntrada($"Dê a distância entre as cidades {cidade1 + 1} e {cidade2 + 1}: ");
-                distancias[cidade2, cidade1] = distancias[cidade1, cidade2];
+                distancias[cidade1, cidade2] = uint.Parse(distanciasString[cidade2]);
             }
         }
 
-        uint tamanhoTrajeto = ValidarEntrada("Digite o número de cidades no percurso desejado: ");
+        string caminhoTrajeto = Path.Combine(caminhoDesktop, "caminho.txt");
+        if (!File.Exists(caminhoTrajeto))
+        {
+            Console.WriteLine("Arquivo de trajeto não encontrado.");
+            return;
+        }
+        // mesma coisa aqui, sem validação
+        string[] trajetoString = File.ReadLines(caminhoTrajeto).First().Split(',');
+
+        uint tamanhoTrajeto = (uint)trajetoString.Length;
         uint[] trajeto = new uint[tamanhoTrajeto];
 
         for (int parada = 0; parada < tamanhoTrajeto; parada++)
         {
-            trajeto[parada] = ValidarEntrada($"Dê o número da parada {parada + 1}") - 1;
+            trajeto[parada] = uint.Parse(trajetoString[parada]) - 1;
         }
 
         Console.Write("A distância total percorrida é de ");
@@ -38,16 +60,5 @@ class Program
             }
         }
         Console.WriteLine($"= {distanciaTotal} km.");
-    }
-
-    public static uint ValidarEntrada(string mensagem)
-    {
-        Console.WriteLine(mensagem);
-        uint valorSaida;
-        while (!uint.TryParse(Console.ReadLine(), out valorSaida))
-        {
-            Console.WriteLine("Entrada inválida, tente novamente: ");
-        }
-        return valorSaida;
     }
 }

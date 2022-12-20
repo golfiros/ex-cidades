@@ -1,11 +1,21 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
+using System.Globalization;
+using CsvHelper;
+using CsvHelper.Configuration;
 
 class Program
 {
     public static void Main()
     {
+        //
+        CsvConfiguration configuracaoCsv = new CsvConfiguration(CultureInfo.InvariantCulture)
+        {
+            HasHeaderRecord = false,
+            NewLine = Environment.NewLine
+        };
+
         string caminhoDesktop = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
 
         string caminhoDistancias = Path.Combine(caminhoDesktop, "matriz.txt");
@@ -14,19 +24,22 @@ class Program
             Console.WriteLine("Arquivo de distâncias não encontrado.");
             return;
         }
-        // muita coisa pode dar errado aqui então não
-        // vou validar as entradas da matriz
-        string[] linhasDistancia = File.ReadAllLines(caminhoDistancias);
 
-        uint numeroCidades = (uint)linhasDistancia.Length;
-        uint[,] distancias = new uint[numeroCidades, numeroCidades];
-
-        for (int cidade1 = 0; cidade1 < numeroCidades; cidade1++)
+        uint numeroCidades;
+        uint[,] distancias;
+        using (StreamReader leitorDistancias = new StreamReader(caminhoDistancias))
+        using (CsvParser analisadorDistancias = new CsvParser(leitorDistancias, configuracaoCsv))
         {
-            string[] distanciasString = linhasDistancia[cidade1].Split(',');
-            for (int cidade2 = 0; cidade2 < numeroCidades; cidade2++)
+            if (!analisadorDistancias.Read()) { return; }
+            numeroCidades = (uint)(analisadorDistancias.Record.Length);
+            distancias = new uint[numeroCidades, numeroCidades];
+            for (int cidade1 = 0; cidade1 < numeroCidades; cidade1++)
             {
-                distancias[cidade1, cidade2] = uint.Parse(distanciasString[cidade2]);
+                for (int cidade2 = 0; cidade2 < numeroCidades; cidade2++)
+                {
+                    distancias[cidade1, cidade2] = uint.Parse(analisadorDistancias.Record[cidade2]);
+                }
+                analisadorDistancias.Read();
             }
         }
 
@@ -36,15 +49,19 @@ class Program
             Console.WriteLine("Arquivo de trajeto não encontrado.");
             return;
         }
-        // mesma coisa aqui, sem validação
-        string[] trajetoString = File.ReadLines(caminhoTrajeto).First().Split(',');
 
-        uint tamanhoTrajeto = (uint)trajetoString.Length;
-        uint[] trajeto = new uint[tamanhoTrajeto];
-
-        for (int parada = 0; parada < tamanhoTrajeto; parada++)
+        uint tamanhoTrajeto;
+        uint[] trajeto;
+        using (StreamReader leitorTrajeto = new StreamReader(caminhoTrajeto))
+        using (CsvParser analisadorTrajeto = new CsvParser(leitorTrajeto, configuracaoCsv))
         {
-            trajeto[parada] = uint.Parse(trajetoString[parada]) - 1;
+            if (!analisadorTrajeto.Read()) { return; }
+            tamanhoTrajeto = (uint)(analisadorTrajeto.Record.Length);
+            trajeto = new uint[tamanhoTrajeto];
+            for (int parada = 0; parada < tamanhoTrajeto; parada++)
+            {
+                trajeto[parada] = uint.Parse(analisadorTrajeto.Record[parada]) - 1;
+            }
         }
 
         Console.Write("A distância total percorrida é de ");
